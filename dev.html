@@ -5,17 +5,48 @@
   <title>WormGPT Developer</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
     body{
       margin:0;
       background:#000;
       color:#ccc;
       font-family:ui-monospace,monospace;
-      padding:40px;
+      padding:20px;
       display:flex;
       justify-content:center;
       align-items:center;
       min-height:100vh;
+      overflow-x:hidden;
+      position:relative;
     }
+    
+    /* Particle Background */
+    #particles{
+      position:fixed;
+      top:0;
+      left:0;
+      width:100%;
+      height:100%;
+      z-index:0;
+      pointer-events:none;
+    }
+    
+    .particle{
+      position:absolute;
+      width:2px;
+      height:2px;
+      background:#ff0000;
+      border-radius:50%;
+      opacity:0.3;
+      animation:float linear infinite;
+    }
+    
+    @keyframes float{
+      0%{transform:translateY(100vh) translateX(0) scale(0);}
+      50%{opacity:0.5;}
+      100%{transform:translateY(-100vh) translateX(50px) scale(1);}
+    }
+    
     .card{
       background:#0a0a0a;
       padding:25px;
@@ -25,15 +56,338 @@
       box-shadow:0 0 25px rgba(255,0,0,0.15);
       border-radius:6px;
       animation:fadeIn 0.8s ease;
+      position:relative;
+      z-index:1;
     }
+    
     @keyframes fadeIn{
       from{opacity:0;transform:translateY(20px);}
       to{opacity:1;transform:translateY(0);}
     }
+    
     .header{
       display:flex;
       gap:20px;
       align-items:center;
+      border-bottom:1px solid #200;
+      padding-bottom:20px;
+      position:relative;
+    }
+    
+    .img-wrapper{
+      position:relative;
+      animation:pulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulse{
+      0%,100%{box-shadow:0 0 10px rgba(255,0,0,0.4);}
+      50%{box-shadow:0 0 25px rgba(255,0,0,0.8);}
+    }
+    
+    img{
+      border:2px solid #ff0000;
+      border-radius:50%;
+      filter:grayscale(1);
+      display:block;
+    }
+    
+    .glitch{
+      position:relative;
+      display:inline-block;
+    }
+    
+    h2{
+      margin:0;
+      color:#ff0000;
+      letter-spacing:2px;
+      font-size:22px;
+      position:relative;
+      display:inline-block;
+    }
+    
+    h2::before,
+    h2::after{
+      content:attr(data-text);
+      position:absolute;
+      top:0;
+      left:0;
+      width:100%;
+      height:100%;
+    }
+    
+    h2::before{
+      animation:glitch1 2.5s infinite;
+      color:#0ff;
+      z-index:-1;
+    }
+    
+    h2::after{
+      animation:glitch2 2.5s infinite;
+      color:#f0f;
+      z-index:-2;
+    }
+    
+    @keyframes glitch1{
+      0%,100%{transform:translate(0);}
+      20%{transform:translate(-2px,2px);}
+      40%{transform:translate(-2px,-2px);}
+      60%{transform:translate(2px,2px);}
+      80%{transform:translate(2px,-2px);}
+    }
+    
+    @keyframes glitch2{
+      0%,100%{transform:translate(0);}
+      20%{transform:translate(2px,-2px);}
+      40%{transform:translate(2px,2px);}
+      60%{transform:translate(-2px,-2px);}
+      80%{transform:translate(-2px,2px);}
+    }
+    
+    .role{
+      color:#888;
+      font-size:14px;
+      margin-top:4px;
+      animation:fadeInUp 1s ease 0.3s both;
+    }
+    
+    @keyframes fadeInUp{
+      from{opacity:0;transform:translateY(10px);}
+      to{opacity:1;transform:translateY(0);}
+    }
+    
+    video{
+      width:100%;
+      margin:20px 0;
+      border:1px solid #222;
+      border-radius:4px;
+      box-shadow:0 0 15px rgba(255,0,0,0.2);
+      transition:transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    video:hover{
+      transform:scale(1.02);
+      box-shadow:0 0 30px rgba(255,0,0,0.5);
+    }
+    
+    pre{
+      background:#020202;
+      padding:15px;
+      border-left:3px solid #ff0000;
+      color:#ff8888;
+      font-size:13px;
+      line-height:1.8;
+      border-radius:4px;
+      box-shadow:inset 0 0 10px rgba(255,0,0,0.1);
+      position:relative;
+      overflow:hidden;
+    }
+    
+    pre::before{
+      content:'';
+      position:absolute;
+      top:0;
+      left:-100%;
+      width:100%;
+      height:100%;
+      background:linear-gradient(90deg,transparent,rgba(255,0,0,0.1),transparent);
+      animation:scan 3s infinite;
+    }
+    
+    @keyframes scan{
+      0%{left:-100%;}
+      100%{left:100%;}
+    }
+    
+    .history-line{
+      position:relative;
+      padding-left:5px;
+      animation:typeIn 0.5s ease both;
+      animation-delay:calc(var(--line) * 0.1s);
+    }
+    
+    @keyframes typeIn{
+      from{opacity:0;transform:translateX(-10px);}
+      to{opacity:1;transform:translateX(0);}
+    }
+    
+    .contact{
+      margin-top:20px;
+      background:#1a0000;
+      border:1px dashed #ff0000;
+      padding:15px;
+      text-align:center;
+      border-radius:4px;
+      position:relative;
+      overflow:hidden;
+    }
+    
+    .contact::before{
+      content:'';
+      position:absolute;
+      top:-50%;
+      left:-50%;
+      width:200%;
+      height:200%;
+      background:linear-gradient(45deg,transparent,rgba(255,0,0,0.1),transparent);
+      animation:rotate 4s linear infinite;
+    }
+    
+    @keyframes rotate{
+      0%{transform:rotate(0deg);}
+      100%{transform:rotate(360deg);}
+    }
+    
+    .contact span{
+      display:block;
+      color:#888;
+      font-size:12px;
+      margin-bottom:5px;
+      position:relative;
+      z-index:1;
+    }
+    
+    .contact a{
+      color:#ff0000;
+      text-decoration:none;
+      font-size:18px;
+      font-weight:bold;
+      transition:0.3s;
+      position:relative;
+      z-index:1;
+      display:inline-block;
+    }
+    
+    .contact a:hover{
+      color:#fff;
+      text-shadow:0 0 8px #ff0000;
+      transform:scale(1.1);
+    }
+    
+    .back-btn{
+      display:block;
+      margin-top:25px;
+      padding:12px;
+      text-align:center;
+      background:#111;
+      color:#ff0000;
+      border:1px solid #400;
+      text-decoration:none;
+      font-weight:bold;
+      letter-spacing:2px;
+      border-radius:4px;
+      transition:0.3s;
+      position:relative;
+      overflow:hidden;
+    }
+    
+    .back-btn::before{
+      content:'';
+      position:absolute;
+      top:50%;
+      left:50%;
+      width:0;
+      height:0;
+      border-radius:50%;
+      background:rgba(255,0,0,0.3);
+      transform:translate(-50%,-50%);
+      transition:width 0.6s,height 0.6s;
+    }
+    
+    .back-btn:hover::before{
+      width:300px;
+      height:300px;
+    }
+    
+    .back-btn:hover{
+      background:#ff0000;
+      color:#000;
+      box-shadow:0 0 12px #ff0000;
+      transform:translateY(-2px);
+    }
+    
+    .back-btn span{
+      position:relative;
+      z-index:1;
+    }
+    
+    /* Mobile Optimization 9:16 */
+    @media (max-width:600px){
+      body{padding:15px;}
+      .card{padding:20px;}
+      .header{gap:15px;}
+      img{width:70px;height:70px;}
+      h2{font-size:20px;}
+      .role{font-size:13px;}
+      pre{font-size:12px;padding:12px;}
+      .contact a{font-size:16px;}
+      .back-btn{padding:10px;font-size:14px;}
+    }
+    
+    @media (max-width:400px){
+      img{width:60px;height:60px;}
+      h2{font-size:18px;}
+      pre{font-size:11px;}
+    }
+  </style>
+</head>
+<body>
+  <div id="particles"></div>
+  
+  <div class="card">
+    <div class="header">
+      <div class="img-wrapper">
+        <img src="dev1.png" alt="dev" width="80" height="80">
+      </div>
+      <div>
+        <h2 class="glitch" data-text="Langz">Langz</h2>
+        <div class="role">Chief Exploit Ecosystem (CEO)</div>
+      </div>
+    </div>
+    
+    <video src="dev2.mp4" autoplay loop muted playsinline></video>
+    
+    <pre>
+<span class="history-line" style="--line:0">[PROFILE DATA]</span>
+<span class="history-line" style="--line:1">Name     : Langz</span>
+<span class="history-line" style="--line:2">Title    : Emperor</span>
+<span class="history-line" style="--line:3">ID       : #002</span>
+<span class="history-line" style="--line:4">Status   : Active</span>
+<span class="history-line" style="--line:5">CodeName : 002</span>
+<span class="history-line" style="--line:6"></span>
+<span class="history-line" style="--line:7">History  :</span>
+<span class="history-line" style="--line:8">- Exploit Nasa Ecosystem</span>
+<span class="history-line" style="--line:9">- Defeat Justin Owner</span>
+<span class="history-line" style="--line:10">- Exploit PLN Infrastructure</span>
+<span class="history-line" style="--line:11">- Anonymous Core Member</span>
+<span class="history-line" style="--line:12">- Breach CIA Database 2023</span>
+<span class="history-line" style="--line:14">- BlackHat Conference Speaker</span>
+<span class="history-line" style="--line:16">- Interpol Red Notice Evader</span>
+<span class="history-line" style="--line:17">- Dark Web Legend Status <span> 
+<span class="history-line" style="--line:20">PT       : @FellixSus @Luxeviente @EvilCyt</span>
+</pre>
+    
+    <div class="contact">
+      <span>SECURE LINE:</span>
+      <a href="https://wa.me/6285928994509">+62 859-2899-4509</a>
+    </div>
+    
+    <a href="main.html" class="back-btn"><span>⟵ BACK TO MAIN</span></a>
+  </div>
+
+  <script>
+    // Generate particles
+    const particlesContainer = document.getElementById('particles');
+    for(let i = 0; i < 50; i++){
+      const particle = document.createElement('div');
+      particle.className = 'particle';
+      particle.style.left = Math.random() * 100 + '%';
+      particle.style.animationDuration = (Math.random() * 3 + 2) + 's';
+      particle.style.animationDelay = Math.random() * 2 + 's';
+      particlesContainer.appendChild(particle);
+    }
+  </script>
+</body>
+</html>
       border-bottom:1px solid #200;
       padding-bottom:20px;
     }
