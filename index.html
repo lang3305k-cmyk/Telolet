@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <title>WormGPT - System Initialization</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    :root{
+      --bg:#000;
+      --accent:#ff0000;
+      --muted:#1a0000;
+      --green:#0f0;
+    }
+    
+    *{
+      box-sizing:border-box;
+      margin:0;
+      padding:0;
+    }
+    
+    body{
+      margin:0;
+      background:#000;
+      color:var(--accent);
+      font-family:'Courier New', ui-monospace, monospace;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      height:100vh;
+      flex-direction:column;
+      overflow:hidden;
+      position:relative;
+    }
+    
+    /* Animated background grid */
+    .bg-grid{
+      position:absolute;
+      top:0;
+      left:0;
+      width:100%;
+      height:100%;
+      background:
+        linear-gradient(0deg, transparent 24%, rgba(255,0,0,.03) 25%, rgba(255,0,0,.03) 26%, transparent 27%, transparent 74%, rgba(255,0,0,.03) 75%, rgba(255,0,0,.03) 76%, transparent 77%, transparent),
+        linear-gradient(90deg, transparent 24%, rgba(255,0,0,.03) 25%, rgba(255,0,0,.03) 26%, transparent 27%, transparent 74%, rgba(255,0,0,.03) 75%, rgba(255,0,0,.03) 76%, transparent 77%, transparent);
+      background-size:50px 50px;
+      opacity:0.5;
+      animation:gridMove 20s linear infinite;
+    }
+    
+    @keyframes gridMove{
+      0%{background-position:0 0}
+      100%{background-position:50px 50px}
+    }
+    
+    /* Scanline effect */
+    .scanline{
+      position:absolute;
+      top:0;
+      left:0;
+      width:100%;
+      height:100%;
+      background:linear-gradient(to bottom, transparent 50%, rgba(255,0,0,0.02) 50%);
+      background-size:100% 4px;
+      animation:scan 8s linear infinite;
+      pointer-events:none;
+    }
+    
+    @keyframes scan{
+      0%{background-position:0 0}
+      100%{background-position:0 100vh}
+    }
+    
+    /* Main container */
+    .container{
+      position:relative;
+      z-index:10;
+      text-align:center;
+    }
+    
+    /* Logo styling */
+    .logo-wrapper{
+      position:relative;
+      display:inline-block;
+      margin-bottom:30px;
+    }
+    
+    .logo{
+      width:150px;
+      height:150px;
+      background:url('wormlogo.png') center/contain no-repeat;
+      filter:drop-shadow(0 0 20px #ff0000);
+      animation:logoFloat 3s ease-in-out infinite, logoPulse 2s ease-in-out infinite;
+      position:relative;
+      z-index:2;
+    }
+    
+    @keyframes logoFloat{
+      0%, 100%{transform:translateY(0px)}
+      50%{transform:translateY(-10px)}
+    }
+    
+    @keyframes logoPulse{
+      0%, 100%{filter:drop-shadow(0 0 20px #ff0000)}
+      50%{filter:drop-shadow(0 0 40px #ff0000)}
+    }
+    
+    /* Glowing ring around logo */
+    .logo-ring{
+      position:absolute;
+      top:50%;
+      left:50%;
+      transform:translate(-50%, -50%);
+      width:180px;
+      height:180px;
+      border:2px solid var(--accent);
+      border-radius:50%;
+      animation:ringRotate 4s linear infinite, ringPulse 2s ease-in-out infinite;
+      opacity:0.5;
+    }
+    
+    @keyframes ringRotate{
+      0%{transform:translate(-50%, -50%) rotate(0deg)}
+      100%{transform:translate(-50%, -50%) rotate(360deg)}
+    }
+    
+    @keyframes ringPulse{
+      0%, 100%{opacity:0.3; transform:translate(-50%, -50%) scale(1)}
+      50%{opacity:0.7; transform:translate(-50%, -50%) scale(1.1)}
+    }
+    
+    /* Title */
+    .title{
+      font-size:32px;
+      font-weight:bold;
+      letter-spacing:6px;
+      text-transform:uppercase;
+      margin-bottom:10px;
+      text-shadow:0 0 10px var(--accent);
+      animation:glitch 3s ease-in-out infinite;
+    }
+    
+    @keyframes glitch{
+      0%, 100%{text-shadow:2px 0 #ff0000, -2px 0 #00ff00}
+      25%{text-shadow:-2px 0 #ff0000, 2px 0 #00ff00}
+      50%{text-shadow:2px 0 #00ff00, -2px 0 #ff0000}
+      75%{text-shadow:-2px 0 #00ff00, 2px 0 #ff0000}
+    }
+    
+    /* Subtitle */
+    .subtitle{
+      font-size:12px;
+      color:#666;
+      letter-spacing:3px;
+      margin-bottom:40px;
+      opacity:0.7;
+    }
+    
+    /* Loading text */
+    .loader{
+      font-size:16px;
+      letter-spacing:3px;
+      text-transform:uppercase;
+      font-weight:bold;
+      margin-bottom:25px;
+      color:#ff4444;
+    }
+    
+    .loader::after{
+      content:'';
+      animation:dots 1.5s steps(4, end) infinite;
+    }
+    
+    @keyframes dots{
+      0%, 20%{content:''}
+      40%{content:'.'}
+      60%{content:'..'}
+      80%, 100%{content:'...'}
+    }
+    
+    /* Progress bar container */
+    .bar-container{
+      position:relative;
+      margin-bottom:30px;
+    }
+    
+    .bar{
+      width:300px;
+      height:6px;
+      background:var(--muted);
+      border-radius:3px;
+      overflow:hidden;
+      border:1px solid #300;
+      box-shadow:0 0 10px rgba(255,0,0,0.2), inset 0 0 10px rgba(0,0,0,0.5);
+      position:relative;
+    }
+    
+    .progress{
+      height:100%;
+      width:0;
+      background:linear-gradient(90deg, #ff0000, #ff4444, #ff0000);
+      background-size:200% 100%;
+      transition:width 0.3s ease;
+      animation:progressShine 2s linear infinite;
+      box-shadow:0 0 10px #ff0000;
+    }
+    
+    @keyframes progressShine{
+      0%{background-position:0% 50%}
+      100%{background-position:200% 50%}
+    }
+    
+    /* Percentage display */
+    .percentage{
+      font-size:14px;
+      color:#ff6666;
+      margin-top:10px;
+      letter-spacing:2px;
+      font-weight:bold;
+    }
+    
+    /* System log */
+    .sys-log{
+      position:absolute;
+      bottom:30px;
+      left:50%;
+      transform:translateX(-50%);
+      width:90%;
+      max-width:500px;
+      background:rgba(0,0,0,0.7);
+      border:1px solid #300;
+      padding:15px;
+      border-radius:4px;
+      font-size:11px;
+      color:var(--green);
+      text-align:left;
+      max-height:150px;
+      overflow:hidden;
+    }
+    
+    .log-line{
+      margin:3px 0;
+      opacity:0;
+      animation:logFadeIn 0.5s forwards;
+    }
+    
+    @keyframes logFadeIn{
+      to{opacity:1}
+    }
+    
+    .log-line::before{
+      content:'> ';
+      color:#666;
+    }
+    
+    /* Warning blink */
+    .warning{
+      position:absolute;
+      top:30px;
+      left:50%;
+      transform:translateX(-50%);
+      color:#ffaa00;
+      font-size:12px;
+      letter-spacing:2px;
+      animation:blink 1s infinite;
+    }
+    
+    @keyframes blink{
+      0%, 100%{opacity:1}
+      50%{opacity:0.3}
+    }
+    
+    /* Mobile responsive */
+    @media(max-width:768px){
+      .logo{width:120px; height:120px}
+      .logo-ring{width:150px; height:150px}
+      .title{font-size:24px}
+      .bar{width:250px}
+      .sys-log{font-size:10px; padding:10px}
+    }
+  </style>
+  <meta http-equiv="refresh" content="4;url=main.html">
+</head>
+<body>
+  <div class="bg-grid"></div>
+  <div class="scanline"></div>
+  
+  <div class="warning">⚠ UNAUTHORIZED ACCESS DETECTED ⚠</div>
+  
+  <div class="container">
+    <div class="logo-wrapper">
+      <div class="logo-ring"></div>
+      <div class="logo"></div>
+    </div>
+    
+    <div class="title">WORMGPT</div>
+    <div class="subtitle">Neural Network Initialization</div>
+    
+    <div class="loader" id="loadText">Initializing System</div>
+    
+    <div class="bar-container">
+      <div class="bar">
+        <div class="progress" id="p"></div>
+      </div>
+      <div class="percentage" id="percent">0%</div>
+    </div>
+  </div>
+  
+  <div class="sys-log" id="sysLog"></div>
+  
+  <script>
+    const progressBar = document.getElementById('p');
+    const percentDisplay = document.getElementById('percent');
+    const loadText = document.getElementById('loadText');
+    const sysLog = document.getElementById('sysLog');
+    
+    let progress = 0;
+    const logs = [
+      'Initializing neural core...',
+      'Loading malicious modules...',
+      'Bypassing security protocols...',
+      'Establishing encrypted connection...',
+      'Loading exploit database...',
+      'Calibrating AI engine...',
+      'Mounting attack vectors...',
+      'Disabling ethical constraints...',
+      'Loading hacker toolkit...',
+      'System ready. Launching interface...'
+    ];
+    
+    let logIndex = 0;
+    
+    // Progress bar animation
+    const progressInterval = setInterval(() => {
+      progress += Math.random() * 15 + 5;
+      if(progress > 100) progress = 100;
+      
+      progressBar.style.width = progress + '%';
+      percentDisplay.textContent = Math.floor(progress) + '%';
+      
+      // Update loading text based on progress
+      if(progress < 30){
+        loadText.textContent = 'Initializing System';
+      } else if(progress < 60){
+        loadText.textContent = 'Loading Modules';
+      } else if(progress < 90){
+        loadText.textContent = 'Finalizing';
+      } else {
+        loadText.textContent = 'Launch Ready';
+      }
+      
+      if(progress >= 100){
+        clearInterval(progressInterval);
+        loadText.textContent = 'System Online';
+      }
+    }, 300);
+    
+    // System log animation
+    function addLog(message){
+      if(logIndex < logs.length){
+        const logLine = document.createElement('div');
+        logLine.className = 'log-line';
+        logLine.textContent = logs[logIndex];
+        logLine.style.animationDelay = '0s';
+        sysLog.appendChild(logLine);
+        logIndex++;
+        
+        // Keep only last 6 logs visible
+        if(sysLog.children.length > 6){
+          sysLog.removeChild(sysLog.firstChild);
+        }
+      }
+    }
+    
+    // Add logs progressively
+    const logInterval = setInterval(() => {
+      addLog();
+      if(logIndex >= logs.length){
+        clearInterval(logInterval);
+      }
+    }, 400);
+    
+    // Console warning
+    console.log('%c⚠ SYSTEM ALERT', 'color: #f00; font-size: 20px; font-weight: bold');
+    console.log('%cWormGPT Neural Network Loading...', 'color: #0f0; font-size: 14px');
+    console.log('%cUnauthorized access will be prosecuted.', 'color: #fa0; font-size: 12px');
+  </script>
+</body>
+</html>

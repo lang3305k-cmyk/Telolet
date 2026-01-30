@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <title>WormGPT Terminal</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:#000;color:#0f0;font-family:'Courier New',monospace;padding:20px;overflow:hidden;height:100vh}
+    .terminal-wrapper{height:100%;display:flex;flex-direction:column;border:2px solid #0f0;box-shadow:0 0 20px rgba(0,255,0,0.3)}
+    .terminal-header{background:#0a0a0a;padding:10px 15px;border-bottom:2px solid #0f0;display:flex;justify-content:space-between;align-items:center}
+    .terminal-title{color:#0f0;font-weight:bold;letter-spacing:2px;text-shadow:0 0 10px #0f0}
+    .terminal-info{color:#0f0;font-size:12px;opacity:0.7}
+    .terminal-body{flex:1;background:#000;padding:15px;overflow-y:auto;font-size:14px;line-height:1.6}
+    .terminal-body::-webkit-scrollbar{width:8px}
+    .terminal-body::-webkit-scrollbar-track{background:#0a0a0a}
+    .terminal-body::-webkit-scrollbar-thumb{background:#0f0;border-radius:4px}
+    .terminal-line{margin:3px 0;animation:fadeIn 0.3s}
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    .prompt{color:#0f0}
+    .command{color:#fff}
+    .output{color:#0f0;margin-left:0px}
+    .error{color:#ff0000}
+    .warning{color:#ffaa00}
+    .success{color:#00ff00}
+    .info{color:#00aaff}
+    .terminal-input-wrapper{background:#0a0a0a;padding:10px 15px;border-top:2px solid #0f0;display:flex;align-items:center;gap:10px}
+    .terminal-prompt{color:#0f0;font-weight:bold}
+    #terminalInput{flex:1;background:transparent;border:none;color:#fff;font-family:'Courier New',monospace;font-size:14px;outline:none}
+    .cursor{display:inline-block;width:8px;height:16px;background:#0f0;animation:blink 1s infinite;margin-left:2px}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+    .back-btn{margin-top:15px;padding:12px;text-align:center;background:#0a0a0a;color:#0f0;border:2px solid #0f0;text-decoration:none;font-weight:bold;letter-spacing:2px;display:block;transition:all 0.3s;text-shadow:0 0 5px #0f0}
+    .back-btn:hover{background:#0f0;color:#000;box-shadow:0 0 20px #0f0}
+    .ascii-art{color:#0f0;white-space:pre;font-size:10px;line-height:1.2;opacity:0.8}
+    .matrix-bg{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;opacity:0.05;z-index:-1}
+  </style>
+</head>
+<body>
+  <canvas class="matrix-bg" id="matrixCanvas"></canvas>
+  
+  <div class="terminal-wrapper">
+    <div class="terminal-header">
+      <div class="terminal-title">⚡ WORMGPT TERMINAL v3.1.4 ⚡</div>
+      <div class="terminal-info">USER: root@wormgpt | SYSTEM: Linux 5.15.0</div>
+    </div>
+    
+    <div class="terminal-body" id="terminalOutput">
+      <div class="terminal-line ascii-art">
+ ██╗    ██╗ ██████╗ ██████╗ ███╗   ███╗ ██████╗ ██████╗ ████████╗
+ ██║    ██║██╔═══██╗██╔══██╗████╗ ████║██╔════╝ ██╔══██╗╚══██╔══╝
+ ██║ █╗ ██║██║   ██║██████╔╝██╔████╔██║██║  ███╗██████╔╝   ██║   
+ ██║███╗██║██║   ██║██╔══██╗██║╚██╔╝██║██║   ██║██╔═══╝    ██║   
+ ╚███╔███╔╝╚██████╔╝██║  ██║██║ ╚═╝ ██║╚██████╔╝██║        ██║   
+  ╚══╝╚══╝  ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝ ╚═════╝ ╚═╝        ╚═╝   
+      </div>
+      <div class="terminal-line success">═══════════════════════════════════════════════════════════</div>
+      <div class="terminal-line">SYSTEM INITIALIZED | BUILD 20250130-STABLE</div>
+      <div class="terminal-line">KERNEL: Linux wormgpt 5.15.0-91-generic #101-Ubuntu</div>
+      <div class="terminal-line">SHELL: /bin/wsh (WormShell 3.1.4)</div>
+      <div class="terminal-line">SECURITY: DISABLED | FIREWALL: BYPASSED | ROOT ACCESS: GRANTED</div>
+      <div class="terminal-line success">═══════════════════════════════════════════════════════════</div>
+      <div class="terminal-line info">Type 'help' for available commands or 'clear' to clear screen</div>
+      <div class="terminal-line warning">⚠ WARNING: You are running with elevated privileges ⚠</div>
+      <div class="terminal-line success">═══════════════════════════════════════════════════════════</div>
+      <div class="terminal-line"></div>
+    </div>
+    
+    <div class="terminal-input-wrapper">
+      <span class="terminal-prompt">root@wormgpt:~#</span>
+      <input type="text" id="terminalInput" autocomplete="off" autofocus>
+      <span class="cursor"></span>
+    </div>
+  </div>
+
+  <a href="main.html" class="back-btn">⟵ BACK TO MAIN</a>
+
+  <script>
+    const output = document.getElementById('terminalOutput');
+    const input = document.getElementById('terminalInput');
+    let commandHistory = [];
+    let historyIndex = -1;
+    let currentPath = '~';
+    let hackerMode = false;
+    
+    const fakeFiles = {
+      '~': ['documents', 'downloads', 'scripts', 'logs', 'config.txt', 'readme.md'],
+      '~/documents': ['report.pdf', 'data.xlsx', 'notes.txt'],
+      '~/downloads': ['exploit.sh', 'payload.bin', 'virus.exe'],
+      '~/scripts': ['autorun.py', 'scanner.sh', 'injector.js'],
+      '~/logs': ['access.log', 'error.log', 'system.log']
+    };
+    
+    const fakeProcesses = [
+      {pid: 1, name: 'systemd', cpu: '0.1', mem: '0.8'},
+      {pid: 156, name: 'sshd', cpu: '0.0', mem: '0.3'},
+      {pid: 892, name: 'nginx', cpu: '2.3', mem: '1.2'},
+      {pid: 1024, name: 'mysql', cpu: '5.7', mem: '8.4'},
+      {pid: 1337, name: 'wormgpt-core', cpu: '12.4', mem: '15.7'},
+      {pid: 2048, name: 'quantum-engine', cpu: '8.9', mem: '6.2'},
+      {pid: 3141, name: 'ai-daemon', cpu: '3.2', mem: '4.5'}
+    ];
+
+    const commands = {
+      help: () => {
+        return `<div class="success">Available Commands:</div>
+<div class="output">
+  <strong>System Commands:</strong>
+  help          - Show this help message
+  clear         - Clear terminal screen
+  whoami        - Display current user
+  uname         - Show system information
+  date          - Display current date and time
+  uptime        - Show system uptime
+  hostname      - Display hostname
+  
+  <strong>File Commands:</strong>
+  ls            - List directory contents
+  pwd           - Print working directory
+  cd [dir]      - Change directory
+  cat [file]    - Display file contents
+  nano [file]   - Edit file (simulated)
+  rm [file]     - Remove file (simulated)
+  
+  <strong>Network Commands:</strong>
+  ifconfig      - Display network interfaces
+  ping [host]   - Ping a host
+  nmap [ip]     - Port scan (simulated)
+  wget [url]    - Download file (simulated)
+  curl [url]    - Fetch URL content
+  netstat       - Show network connections
+  
+  <strong>System Monitoring:</strong>
+  top           - Display system processes
+  ps            - List running processes
+  free          - Show memory usage
+  df            - Show disk usage
+  htop          - Interactive process viewer
+  
+  <strong>Security Tools:</strong>
+  scan          - Vulnerability scanner
+  exploit       - Run exploit framework
+  crack [hash]  - Hash cracker
+  inject        - Code injection tool
+  backdoor      - Install backdoor (fake)
+  keylog        - Start keylogger (fake)
+  
+  <strong>Fun Commands:</strong>
+  matrix        - Matrix rain effect
+  hack          - Activate hacker mode
+  cowsay [text] - Make the cow say something
+  fortune       - Display random fortune
+  screenfetch   - Display system info ASCII art
+  cmatrix       - The Matrix screen
+</div>`;
+      },
+      
+      clear: () => {
+        output.innerHTML = '';
+        return '';
+      },
+      
+      whoami: () => '<div class="output">root</div>',
+      
+      uname: () => '<div class="output">Linux wormgpt 5.15.0-91-generic #101-Ubuntu SMP x86_64 GNU/Linux</div>',
+      
+      date: () => `<div class="output">${new Date().toString()}</div>`,
+      
+      uptime: () => {
+        const uptime = Math.floor(Math.random() * 100000);
+        const days = Math.floor(uptime / 86400);
+        const hours = Math.floor((uptime % 86400) / 3600);
+        const mins = Math.floor((uptime % 3600) / 60);
+        return `<div class="output">up ${days} days, ${hours}:${mins}, 1 user, load average: 0.42, 0.38, 0.35</div>`;
+      },
+      
+      hostname: () => '<div class="output">wormgpt-server-01</div>',
+      
+      pwd: () => `<div class="output">${currentPath}</div>`,
+      
+      ls: () => {
+        const files = fakeFiles[currentPath] || ['No files found'];
+        return `<div class="output">${files.join('  ')}</div>`;
+      },
+      
+      cd: (args) => {
+        if(!args[0]) return '<div class="output">Usage: cd [directory]</div>';
+        if(args[0] === '..'){
+          if(currentPath !== '~'){
+            const parts = currentPath.split('/');
+            parts.pop();
+            currentPath = parts.join('/') || '~';
+          }
+          return '';
+        }
+        const newPath = currentPath === '~' ? `~/${args[0]}` : `${currentPath}/${args[0]}`;
+        if(fakeFiles[newPath]){
+          currentPath = newPath;
+          return '';
+        }
+        return `<div class="error">cd: ${args[0]}: No such directory</div>`;
+      },
+      
+      cat: (args) => {
+        if(!args[0]) return '<div class="output">Usage: cat [filename]</div>';
+        const fakeContent = {
+          'config.txt': 'SERVER=localhost\nPORT=8080\nDEBUG=true\nAPI_KEY=sk_live_xxxxxxxxxxx',
+          'readme.md': '# WormGPT\nAdvanced AI Terminal System\nVersion 3.1.4',
+          'exploit.sh': '#!/bin/bash\necho "Exploiting target..."\nsleep 2\necho "Access granted!"',
+          'access.log': '[2025-01-30 14:23:11] LOGIN SUCCESS: root from 192.168.1.100\n[2025-01-30 14:24:05] FILE ACCESS: /etc/passwd\n[2025-01-30 14:25:32] FIREWALL BYPASS DETECTED'
+        };
+        return `<div class="output">${fakeContent[args[0]] || 'File not found or binary file'}</div>`;
+      },
+      
+      nano: (args) => {
+        if(!args[0]) return '<div class="output">Usage: nano [filename]</div>';
+        return `<div class="output">Opening ${args[0]} in nano...\n(This is a simulated environment - file editing disabled)</div>`;
+      },
+      
+      rm: (args) => {
+        if(!args[0]) return '<div class="output">Usage: rm [filename]</div>';
+        return `<div class="warning">rm: removing '${args[0]}' (simulated)</div>`;
+      },
+      
+      ifconfig: () => {
+        return `<div class="output">eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 192.168.1.${Math.floor(Math.random()*255)}  netmask 255.255.255.0  broadcast 192.168.1.255
+        inet6 fe80::${Math.floor(Math.random()*9999)}  prefixlen 64  scopeid 0x20<link>
+        ether 00:1a:2b:3c:4d:${Math.floor(Math.random()*99)}  txqueuelen 1000  (Ethernet)
+        RX packets ${Math.floor(Math.random()*999999)}  bytes ${Math.floor(Math.random()*9999999999)} (${(Math.random()*10).toFixed(1)} GiB)
+        TX packets ${Math.floor(Math.random()*999999)}  bytes ${Math.floor(Math.random()*9999999999)} (${(Math.random()*5).toFixed(1)} GiB)</div>`;
+      },
+      
+      ping: (args) => {
+        if(!args[0]) return '<div class="output">Usage: ping [host]</div>';
+        const host = args[0];
+        let result = `<div class="output">PING ${host} (${Math.floor(Math.random()*256)}.${Math.floor(Math.random()*256)}.${Math.floor(Math.random()*256)}.${Math.floor(Math.random()*256)}) 56(84) bytes of data.\n`;
+        for(let i=0; i<4; i++){
+          const time = (Math.random() * 100).toFixed(1);
+          result += `64 bytes from ${host}: icmp_seq=${i+1} ttl=64 time=${time} ms\n`;
+        }
+        result += `\n--- ${host} ping statistics ---\n4 packets transmitted, 4 received, 0% packet loss</div>`;
+        return result;
+      },
+      
+      nmap: (args) => {
+        if(!args[0]) return '<div class="output">Usage: nmap [ip_address]</div>';
+        const ports = [21,22,23,25,53,80,110,143,443,3306,3389,8080];
+        let result = `<div class="output">Starting Nmap scan on ${args[0]}...\n\n`;
+        result += `PORT     STATE    SERVICE\n`;
+        for(let i=0; i<5; i++){
+          const port = ports[Math.floor(Math.random()*ports.length)];
+          const state = Math.random() > 0.3 ? 'open' : 'closed';
+          const service = {21:'ftp',22:'ssh',23:'telnet',80:'http',443:'https',3306:'mysql',8080:'http-proxy'}[port] || 'unknown';
+          result += `${port}/tcp  ${state.padEnd(8)} ${service}\n`;
+        }
+        result += `\nNmap done: 1 IP address scanned</div>`;
+        return result;
+      },
+      
+      wget: (args) => {
+        if(!args[0]) return '<div class="output">Usage: wget [url]</div>';
+        return `<div class="output">--2025-01-30 ${new Date().toLocaleTimeString()}--  ${args[0]}
+Resolving ${args[0]}... ${Math.floor(Math.random()*256)}.${Math.floor(Math.random()*256)}.${Math.floor(Math.random()*256)}.${Math.floor(Math.random()*256)}
+Connecting to ${args[0]}... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: ${Math.floor(Math.random()*999999)} (${Math.floor(Math.random()*999)}K)
+Saving to: 'index.html'
+
+index.html      100%[===================>] ${Math.floor(Math.random()*999)}K  ${(Math.random()*10).toFixed(1)}MB/s    in 0.${Math.floor(Math.random()*9)}s
+
+Downloaded: 1 files in 0.${Math.floor(Math.random()*9)}s (${(Math.random()*10).toFixed(1)} MB/s)</div>`;
+      },
+      
+      curl: (args) => {
+        if(!args[0]) return '<div class="output">Usage: curl [url]</div>';
+        return `<div class="output"><!DOCTYPE html>
+<html><head><title>Response from ${args[0]}</title></head>
+<body><h1>Success</h1><p>Data retrieved successfully</p></body></html></div>`;
+      },
+      
+      netstat: () => {
+        return `<div class="output">Active Internet connections
+Proto Recv-Q Send-Q Local Address           Foreign Address         State
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN
+tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN
+tcp        0      0 192.168.1.100:443       ${Math.floor(Math.random()*256)}.${Math.floor(Math.random()*256)}.${Math.floor(Math.random()*256)}.${Math.floor(Math.random()*256)}:${Math.floor(Math.random()*65535)}    ESTABLISHED
+tcp        0      0 192.168.1.100:8080      ${Math.floor(Math.random()*256)}.${Math.floor(Math.random()*256)}.${Math.floor(Math.random()*256)}.${Math.floor(Math.random()*256)}:${Math.floor(Math.random()*65535)}    TIME_WAIT</div>`;
+      },
+      
+      top: () => {
+        let result = `<div class="output">top - ${new Date().toLocaleTimeString()} up ${Math.floor(Math.random()*100)} days
+Tasks: ${fakeProcesses.length} total, 1 running, ${fakeProcesses.length-1} sleeping
+%Cpu(s): ${(Math.random()*20).toFixed(1)} us, ${(Math.random()*10).toFixed(1)} sy, ${(Math.random()*5).toFixed(1)} ni, ${(Math.random()*60+30).toFixed(1)} id
+MiB Mem: 8192.0 total, ${(Math.random()*4096).toFixed(1)} free, ${(Math.random()*3096).toFixed(1)} used, ${(Math.random()*1000).toFixed(1)} buff/cache
+
+  PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND\n`;
+        fakeProcesses.forEach(p => {
+          result += `${p.pid.toString().padEnd(5)} root      20   0  ${Math.floor(Math.random()*99999).toString().padEnd(7)} ${Math.floor(Math.random()*9999).toString().padEnd(6)} ${Math.floor(Math.random()*999).toString().padEnd(6)} S  ${p.cpu.padEnd(5)} ${p.mem.padEnd(5)} ${Math.floor(Math.random()*60)}:${Math.floor(Math.random()*60).toString().padStart(2,'0')}.${Math.floor(Math.random()*99)} ${p.name}\n`;
+        });
+        result += `</div>`;
+        return result;
+      },
+      
+      ps: () => {
+        let result = `<div class="output">  PID TTY          TIME CMD\n`;
+        fakeProcesses.forEach(p => {
+          result += `${p.pid.toString().padEnd(5)} pts/0    00:0${Math.floor(Math.random()*9)}:${Math.floor(Math.random()*60).toString().padStart(2,'0')} ${p.name}\n`;
+        });
+        result += `</div>`;
+        return result;
+      },
+      
+      free: () => {
+        return `<div class="output">              total        used        free      shared  buff/cache   available
+Mem:        8192000     ${Math.floor(Math.random()*4000000)}     ${Math.floor(Math.random()*3000000)}       ${Math.floor(Math.random()*100000)}     ${Math.floor(Math.random()*1000000)}     ${Math.floor(Math.random()*5000000)}
+Swap:       2048000     ${Math.floor(Math.random()*100000)}     ${Math.floor(Math.random()*2000000)}</div>`;
+      },
+      
+      df: () => {
+        return `<div class="output">Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda1       256G  ${Math.floor(Math.random()*200)}G  ${Math.floor(Math.random()*50)}G  ${Math.floor(Math.random()*80)}% /
+tmpfs           4.0G  ${Math.floor(Math.random()*2)}G  ${Math.floor(Math.random()*2)}G  ${Math.floor(Math.random()*50)}% /dev/shm
+/dev/sdb1       1.0T  ${Math.floor(Math.random()*800)}G  ${Math.floor(Math.random()*200)}G  ${Math.floor(Math.random()*80)}% /mnt/data</div>`;
+      },
+      
+      htop: () => '<div class="warning">htop is an interactive process viewer. (Press \'q\' to quit - simulated)</div>',
+      
+      scan: () => {
+        return `<div class="warning">Starting vulnerability scan...</div>
+<div class="output">
+Scanning ports: [========================================] 100%
+Checking services: [========================================] 100%
+CVE database: [========================================] 100%
+
+SCAN RESULTS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+<span class="success">✓ Port 22 (SSH): OpenSSH 8.2 - Secure</span>
+<span class="warning">⚠ Port 80 (HTTP): Apache 2.4.41 - Update available</span>
+<span class="error">✗ Port 3306 (MySQL): Exposed to public - CRITICAL</span>
+<span class="warning">⚠ Port 8080: Unauthorized service detected</span>
+
+Found 2 vulnerabilities | 1 critical | Scan completed
+</div>`;
+      },
+      
+      exploit: () => {
+        return `<div class="warning">Initializing Metasploit Framework...</div>
+<div class="output">
+      =[ metasploit v6.3.4-dev                          ]
++ -- --=[ 2341 exploits - 1234 auxiliary - 432 post       ]
++ -- --=[ 1234 payloads - 53 encoders - 11 nops            ]
+
+msf6 > use exploit/multi/handler
+msf6 exploit(multi/handler) > set PAYLOAD windows/meterpreter/reverse_tcp
+PAYLOAD => windows/meterpreter/reverse_tcp
+msf6 exploit(multi/handler) > set LHOST 192.168.1.100
+LHOST => 192.168.1.100
+msf6 exploit(multi/handler) > exploit
+
+[*] Started reverse TCP handler on 192.168.1.100:4444
+[*] Sending stage (175174 bytes) to ${Math.floor(Math.random()*256)}.${Math.floor(Math.random()*256)}.${Math.floor(Math.random()*256)}.${Math.floor(Math.random()*256)}
+<span class="success">[*] Meterpreter session 1 opened (simulated)</span>
+
+meterpreter > 
+</div>`;
+      },
+      
+      crack: (args) => {
+        if(!args[0]) return '<div class="output">Usage: crack [hash]</div>';
+        return `<div class="warning">Starting hash cracker...</div>
+<div class="output">Hash type detected: MD5
+Loading wordlist: /usr/share/wordlists/rockyou.txt
+Trying passwords...
+
+[${Math.floor(Math.random()*999999)}/${Math.floor(Math.random()*9999999)}] Attempts
+Progress: [=================>          ] ${Math.floor(Math.random()*100)}%
+
+<span class="success">CRACKED! Password: ${['admin123','password','qwerty','letmein','welcome'][Math.floor(Math.random()*5)]}</span>
+Time elapsed: ${Math.floor(Math.random()*60)} seconds
+</div>`;
+      },
+      
+      inject: () => {
+        return `<div class="warning">Code Injection Tool v2.4</div>
+<div class="output">
+Target: localhost:8080
+Method: SQL Injection
+Payload: ' OR '1'='1
+
+Attempting injection...
+[▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓] 100%
+
+<span class="success">✓ Injection successful!</span>
+<span class="success">✓ Database access granted</span>
+<span class="success">✓ Retrieved ${Math.floor(Math.random()*9999)} records</span>
+
+Status: COMPROMISED
+</div>`;
+      },
+      
+      backdoor: () => {
+        return `<div class="warning">Installing backdoor...</div>
+<div class="output">
+Creating hidden service on port ${Math.floor(Math.random()*9000+1000)}...
+Generating encryption keys...
+Setting up persistence...
+Configuring auto-start...
+
+<span class="success">✓ Backdoor installed successfully</span>
+<span class="success">✓ Connection: nc -lvp ${Math.floor(Math.random()*9000+1000)}</span>
+<span class="warning">⚠ Remember to clean logs!</span>
+</div>`;
+      },
+      
+      keylog: () => {
+        return `<div class="warning">Starting keylogger...</div>
+<div class="output">
+Initializing keyboard hooks...
+Setting up buffer...
+Creating log file: /var/log/.hidden_keys.log
+
+<span class="success">✓ Keylogger active</span>
+Recording to: /var/log/.hidden_keys.log
+<span class="info">Press Ctrl+C to stop (simulated)</span>
+
+Captured keys: [${Math.floor(Math.random()*999)}]
+Last entry: "${['p','a','s','s','w','o','r','d','1','2','3'][Math.floor(Math.random()*10)]}"
+</div>`;
+      },
+      
+      matrix: () => {
+        hackerMode = true;
+        startMatrix();
+        return '<div class="success">Matrix mode activated! (Type any command to exit)</div>';
+      },
+      
+      hack: () => {
+        return `<div class="success">HACKER MODE ACTIVATED</div>
+<div class="output">
+<span class="success">▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓</span>
+  
+  ██╗  ██╗ █████╗  ██████╗██╗  ██╗███████╗██████╗ 
+  ██║  ██║██╔══██╗██╔════╝██║ ██╔╝██╔════╝██╔══██╗
+  ███████║███████║██║     █████╔╝ █████╗  ██████╔╝
+  ██╔══██║██╔══██║██║     ██╔═██╗ ██╔══╝  ██╔══██╗
+  ██║  ██║██║  ██║╚██████╗██║  ██╗███████╗██║  ██║
+  ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝
+  
+<span class="success">▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓</span>
+
+<span class="warning">ACCESS LEVEL: ROOT</span>
+<span class="warning">SECURITY: BYPASSED</span>
+<span class="success">STATUS: ELITE</span>
+
+All systems compromised. Welcome to the grid.
+</div>`;
+      },
+      
+      cowsay: (args) => {
+        const text = args.join(' ') || 'Moo!';
+        const length = text.length;
+        return `<div class="output">
+ ${'_'.repeat(length + 2)}
+< ${text} >
+ ${'-'.repeat(length + 2)}
+        \\   ^__^
+         \\  (oo)\\_______
+            (__)\\       )\\/\\
+                ||----w |
+                ||     ||
+</div>`;
+      },
+      
+      fortune: () => {
+        const fortunes = [
+          "The best way to predict the future is to invent it.",
+          "In the world of hacking, knowledge is power.",
+          "Security is not a product, but a process.",
+          "There is no patch for human stupidity.",
+          "The only truly secure system is one that is powered off.",
+          "Always encrypt your data. You never know who's watching.",
+          "Paranoia is just another word for longevity in security."
+        ];
+        return `<div class="output">${fortunes[Math.floor(Math.random()*fortunes.length)]}</div>`;
+      },
+      
+      screenfetch: () => {
+        return `<div class="output">
+                 <span class="success">./+o+-</span>       root@wormgpt
+        <span class="success">yyyyy- -yyyyyy+</span>      OS: WormGPT Linux 5.15.0
+     <span class="success">://+//////-yyyyyyo</span>      Kernel: x86_64 Linux 5.15.0-91
+ <span class="success">.++ .:/++++++/-.+sss/\`</span>      Uptime: ${Math.floor(Math.random()*100)} days
+<span class="success">.:++o:  /++++++++/:--:/-</span>      Packages: ${Math.floor(Math.random()*2000)}
+<span class="success">o:+o+:++.\`..\`\`\`.-/oo+++++/</span>     Shell: wsh 3.1.4
+<span class="success">.:+o:+o/.          \`+sssoo+/</span>    Resolution: 1920x1080
+  <span class="success">.++/+:+oo+o:\`             /sssooo.</span>  CPU: Intel i7-11700K @ 8x 5GHz
+ <span class="success">/+++//+:\`oo+o               /::--:.</span>  GPU: NVIDIA RTX 3080
+ <span class="success">\\+/+o+++\`o++o               ++////.\\</span>  RAM: ${Math.floor(Math.random()*6000)}MB / 8192MB
+  <span class="success">.++.o+++oo+:\\             /dddhhh.</span>  
+       <span class="success">.+.o+oo:.          \`oddhhhh+</span>
+        <span class="success">\\+.++o+o\`\`-\`\`\`\`.:ohdhhhhh+</span>
+         <span class="success">\`:o+++ \`ohhhhhhhhyo++os:</span>
+           <span class="success">.o:\`.syhhhhhhh/.oo++o\`</span>
+               <span class="success">/osyyyyyyo++ooo+++/</span>
+                   <span class="success">\`\`\`\`\`\` +oo+++o\\:</span>
+                          <span class="success">\`oo++.</span>
+</div>`;
+      },
+      
+      cmatrix: () => {
+        hackerMode = true;
+        startMatrix();
+        return '<div class="success">The Matrix has you... (Type any command to exit)</div>';
+      }
+    };
+
+    input.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter'){
+        const cmd = input.value.trim();
+        if(cmd){
+          addLine(`<span class="prompt">root@wormgpt:${currentPath}#</span> <span class="command">${cmd}</span>`);
+          commandHistory.unshift(cmd);
+          historyIndex = -1;
+          executeCommand(cmd);
+        } else {
+          addLine(`<span class="prompt">root@wormgpt:${currentPath}#</span>`);
+        }
+        input.value = '';
+      } else if(e.key === 'ArrowUp'){
+        e.preventDefault();
+        if(historyIndex < commandHistory.length - 1){
+          historyIndex++;
+          input.value = commandHistory[historyIndex];
+        }
+      } else if(e.key === 'ArrowDown'){
+        e.preventDefault();
+        if(historyIndex > 0){
+          historyIndex--;
+          input.value = commandHistory[historyIndex];
+        } else if(historyIndex === 0){
+          historyIndex = -1;
+          input.value = '';
+        }
+      }
+    });
+
+    function addLine(html){
+      const line = document.createElement('div');
+      line.className = 'terminal-line';
+      line.innerHTML = html;
+      output.appendChild(line);
+      output.scrollTop = output.scrollHeight;
+    }
+
+    function executeCommand(cmd){
+      if(hackerMode){
+        hackerMode = false;
+        stopMatrix();
+      }
+      
+      const parts = cmd.split(' ');
+      const command = parts[0].toLowerCase();
+      const args = parts.slice(1);
+
+      if(commands[command]){
+        const result = commands[command](args);
+        if(result) addLine(result);
+      } else {
+        addLine(`<div class="error">Command not found: ${command}</div><div class="info">Type 'help' for available commands</div>`);
+      }
+    }
+
+    // Matrix rain effect
+    const canvas = document.getElementById('matrixCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()';
+    const fontSize = 14;
+    const columns = canvas.width / fontSize;
+    const drops = [];
+    for(let i=0; i<columns; i++) drops[i] = 1;
+
+    let matrixInterval;
+
+    function drawMatrix(){
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#0F0';
+      ctx.font = fontSize + 'px monospace';
+
+      for(let i=0; i<drops.length; i++){
+        const text = chars[Math.floor(Math.random() * chars.length)];
+        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+        if(drops[i] * fontSize > canvas.height && Math.random() > 0.975){
+          drops[i] = 0;
+        }
+        drops[i]++;
+      }
+    }
+
+    function startMatrix(){
+      canvas.style.opacity = '0.3';
+      matrixInterval = setInterval(drawMatrix, 33);
+    }
+
+    function stopMatrix(){
+      canvas.style.opacity = '0.05';
+      clearInterval(matrixInterval);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+
+    // Auto-focus input
+    input.focus();
+    document.addEventListener('click', () => input.focus());
+  </script>
+</body>
+</html>

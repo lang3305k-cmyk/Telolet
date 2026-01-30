@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <title>WormGPT Tools v2.0</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;background:#000;color:#ccc;font-family:ui-monospace,'Courier New',monospace;padding:20px;overflow-x:hidden}
+    .header{text-align:center;margin-bottom:30px;border-bottom:2px solid #300;padding-bottom:15px}
+    .header h1{color:#ff0000;margin:0;font-size:28px;letter-spacing:3px;text-shadow:0 0 10px #ff0000}
+    .header .version{color:#666;font-size:12px;margin-top:5px}
+    h2{color:#ff0000;text-transform:uppercase;letter-spacing:2px;border-bottom:2px solid #300;padding-bottom:10px;margin-top:30px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:15px;margin-top:20px}
+    .card{background:#0a0a0a;padding:15px;border:1px solid #200;border-left:4px solid #ff0000;position:relative;transition:all 0.3s}
+    .card:hover{border-left-color:#ff4444;transform:translateY(-2px)}
+    .card.active{border-color:#ff0000;box-shadow:0 0 15px rgba(255,0,0,0.3)}
+    .label{color:#666;font-size:11px;text-transform:uppercase;margin-bottom:8px}
+    .value{color:#fff;font-weight:bold;font-size:14px;min-height:20px}
+    button{margin-top:10px;width:100%;padding:8px;background:#300;color:#ff4444;border:1px solid #600;cursor:pointer;font-size:11px;font-weight:bold;transition:all 0.2s;text-transform:uppercase}
+    button:hover{background:#ff0000;color:#000}
+    button:active{transform:scale(0.95)}
+    button:disabled{opacity:0.5;cursor:not-allowed}
+    #log{margin-top:20px;background:#050505;color:#0f0;padding:15px;border:1px solid #111;height:180px;overflow:auto;font-size:12px;font-family:monospace}
+    .log-line{margin:2px 0}
+    .log-error{color:#ff4444}
+    .log-success{color:#0f0}
+    .log-warning{color:#ffaa00}
+    .log-info{color:#44aaff}
+    .back-btn{display:block;margin-top:25px;padding:12px;text-align:center;background:#111;color:#ff0000;border:1px solid #400;text-decoration:none;font-weight:bold;letter-spacing:2px;transition:all 0.3s}
+    .back-btn:hover{background:#ff0000;color:#000}
+    .progress-bar{width:100%;height:4px;background:#111;margin-top:8px;overflow:hidden;display:none}
+    .progress-fill{height:100%;background:#ff0000;width:0%;transition:width 0.3s}
+    .status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;animation:pulse 2s infinite}
+    .status-dot.online{background:#0f0}
+    .status-dot.offline{background:#f00}
+    .status-dot.warning{background:#fa0}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+    .blink{animation:blink 1s infinite}
+    input[type="text"]{width:100%;padding:8px;background:#0a0a0a;border:1px solid #300;color:#fff;margin-top:5px;font-family:monospace}
+    .terminal-input{display:flex;gap:5px;margin-top:10px}
+    .terminal-input input{flex:1}
+    .terminal-input button{margin:0;width:auto;padding:8px 15px}
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>⚠ WORMGPT TOOLS ⚠</h1>
+    <div class="version">v2.0.1 | Build 20250130 | <span class="blink" style="color:#0f0">● SECURE CONNECTION</span></div>
+  </div>
+
+  <h2>⚙ System Monitor</h2>
+  <div class="grid">
+    <div class="card"><div class="label">Battery Status</div><div class="value" id="battery"><span class="status-dot online"></span>...</div></div>
+    <div class="card"><div class="label">Network Status</div><div class="value" id="network"><span class="status-dot online"></span>...</div></div>
+    <div class="card"><div class="label">Storage Usage</div><div class="value" id="storage">...</div><div class="progress-bar" id="storageBar"><div class="progress-fill"></div></div></div>
+    <div class="card"><div class="label">System Uptime</div><div class="value" id="uptime">...</div></div>
+    <div class="card"><div class="label">CPU Temperature</div><div class="value" id="cpuTemp">36°C</div></div>
+    <div class="card"><div class="label">GPU Load</div><div class="value" id="gpuLoad">12%</div></div>
+    <div class="card"><div class="label">RAM Usage</div><div class="value" id="ramUsage">2.1 GB / 8 GB</div><div class="progress-bar" id="ramBar"><div class="progress-fill"></div></div></div>
+    <div class="card"><div class="label">System Clock</div><div class="value" id="sysClock">--:--:--</div></div>
+  </div>
+
+  <h2>🔧 Tools & Utilities</h2>
+  <div class="grid">
+    <div class="card"><div class="label">Clipboard Reader</div><div class="value" id="clip">Idle</div><button onclick="readClipboard()">Read Clipboard</button></div>
+    <div class="card"><div class="label">Ping Monitor</div><div class="value" id="ping">-- ms</div><button onclick="testPing()">Test Ping</button></div>
+    <div class="card"><div class="label">Process Monitor</div><div class="value" id="process">Running: --</div><button onclick="scanProcesses()">Scan Processes</button></div>
+    <div class="card"><div class="label">Firewall Status</div><div class="value" id="firewall"><span class="status-dot online"></span>Active</div><button onclick="toggleFirewall()">Toggle</button></div>
+  </div>
+
+  <h2>🌐 Network Tools</h2>
+  <div class="grid">
+    <div class="card">
+      <div class="label">IP Tracer</div>
+      <div class="value" id="ipTrace">Ready</div>
+      <input type="text" id="ipInput" placeholder="Enter IP address...">
+      <button onclick="traceIP()">Trace IP</button>
+    </div>
+    <div class="card">
+      <div class="label">Port Scanner</div>
+      <div class="value" id="portScan">Idle</div>
+      <button onclick="scanPorts()">Scan Ports</button>
+      <div class="progress-bar" id="portProgress"><div class="progress-fill"></div></div>
+    </div>
+    <div class="card">
+      <div class="label">DNS Lookup</div>
+      <div class="value" id="dns">Ready</div>
+      <input type="text" id="dnsInput" placeholder="Enter domain...">
+      <button onclick="dnsLookup()">Lookup</button>
+    </div>
+    <div class="card">
+      <div class="label">Network Sniffer</div>
+      <div class="value" id="sniffer">Offline</div>
+      <button onclick="toggleSniffer()">Start Sniffing</button>
+    </div>
+    <div class="card">
+      <div class="label">Bandwidth Monitor</div>
+      <div class="value" id="bandwidth">↓ 0 KB/s ↑ 0 KB/s</div>
+    </div>
+    <div class="card">
+      <div class="label">SSL Certificate</div>
+      <div class="value" id="ssl"><span class="status-dot online"></span>Valid</div>
+      <button onclick="checkSSL()">Verify</button>
+    </div>
+  </div>
+
+  <h2>🔐 Security Tools</h2>
+  <div class="grid">
+    <div class="card">
+      <div class="label">Vulnerability Scanner</div>
+      <div class="value" id="vulnScan">Ready</div>
+      <button onclick="scanVulnerabilities()">Scan System</button>
+      <div class="progress-bar" id="vulnProgress"><div class="progress-fill"></div></div>
+    </div>
+    <div class="card">
+      <div class="label">Intrusion Detector</div>
+      <div class="value" id="intrusion"><span class="status-dot online"></span>Monitoring</div>
+      <button onclick="checkIntrusion()">Check Logs</button>
+    </div>
+    <div class="card">
+      <div class="label">Hash Generator</div>
+      <div class="value" id="hash">MD5/SHA256</div>
+      <input type="text" id="hashInput" placeholder="Enter text...">
+      <button onclick="generateHash()">Generate</button>
+    </div>
+    <div class="card">
+      <div class="label">Password Strength</div>
+      <div class="value" id="passStrength">--</div>
+      <input type="text" id="passInput" placeholder="Enter password...">
+      <button onclick="checkPassword()">Analyze</button>
+    </div>
+  </div>
+
+  <h2>🕸 Advanced Operations</h2>
+  <div class="grid">
+    <div class="card">
+      <div class="label">Darknet Scanner</div>
+      <div class="value" id="darknet">Idle</div>
+      <button onclick="scanDarknet()">Scan Network</button>
+    </div>
+    <div class="card">
+      <div class="label">Proxy Chain</div>
+      <div class="value" id="proxy">Not Connected</div>
+      <button onclick="connectProxy()">Connect</button>
+    </div>
+    <div class="card">
+      <div class="label">VPN Status</div>
+      <div class="value" id="vpn"><span class="status-dot offline"></span>Disconnected</div>
+      <button onclick="toggleVPN()">Toggle VPN</button>
+    </div>
+    <div class="card">
+      <div class="label">Quantum Flux</div>
+      <div class="value" id="flux">Stable (98.7%)</div>
+    </div>
+    <div class="card">
+      <div class="label">AI Core</div>
+      <div class="value" id="aiCore"><span class="status-dot warning"></span>Standby</div>
+      <button onclick="bootAI()">Boot AI</button>
+    </div>
+    <div class="card">
+      <div class="label">Payload Injector</div>
+      <div class="value" id="payload">Loaded</div>
+      <button onclick="injectPayload()">Execute</button>
+    </div>
+    <div class="card">
+      <div class="label">Rootkit Detector</div>
+      <div class="value" id="rootkit">Clean</div>
+      <button onclick="detectRootkit()">Deep Scan</button>
+      <div class="progress-bar" id="rootkitProgress"><div class="progress-fill"></div></div>
+    </div>
+    <div class="card">
+      <div class="label">Traffic Analyzer</div>
+      <div class="value" id="traffic">0 packets/sec</div>
+      <button onclick="analyzeTraffic()">Analyze</button>
+    </div>
+  </div>
+
+  <h2>📊 Terminal Output</h2>
+  <pre id="log">[SYSTEM] WormGPT Tools v2.0 initialized
+[SYSTEM] All modules loaded successfully
+[READY] Waiting for commands...</pre>
+
+  <a href="main.html" class="back-btn">⟵ BACK TO MAIN</a>
+
+  <script>
+    const logBox = document.getElementById("log");
+    const fakeIPs = ['192.168.1.','10.0.0.','172.16.','45.33.','104.21.'];
+    const fakePorts = [21,22,23,25,53,80,110,143,443,3306,3389,8080];
+    const fakeCountries = ['USA','Germany','Russia','China','Japan','Brazil','UK','France'];
+    
+    function log(msg, type='info'){
+      const time = new Date().toLocaleTimeString();
+      const className = 'log-' + type;
+      logBox.innerHTML += `<div class="log-line ${className}">[${time}] ${msg}</div>`;
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    function randomIP(){
+      return fakeIPs[Math.floor(Math.random()*fakeIPs.length)] + Math.floor(Math.random()*255);
+    }
+
+    function randomPort(){
+      return fakePorts[Math.floor(Math.random()*fakePorts.length)];
+    }
+
+    function sleep(ms){
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function progressBar(barId, duration){
+      const bar = document.getElementById(barId);
+      const fill = bar.querySelector('.progress-fill');
+      bar.style.display = 'block';
+      fill.style.width = '0%';
+      
+      for(let i=0; i<=100; i+=2){
+        fill.style.width = i + '%';
+        await sleep(duration/50);
+      }
+      
+      setTimeout(() => {
+        bar.style.display = 'none';
+      }, 500);
+    }
+
+    // System Monitor Updates
+    setInterval(() => {
+      document.getElementById("cpuTemp").innerText = (30 + Math.floor(Math.random()*20)) + "°C";
+      document.getElementById("gpuLoad").innerText = Math.floor(Math.random()*100) + "%";
+      
+      const ramUsed = (Math.random()*6 + 1).toFixed(1);
+      document.getElementById("ramUsage").innerText = ramUsed + " GB / 8 GB";
+      const ramPercent = (ramUsed / 8 * 100).toFixed(0);
+      const ramBar = document.getElementById("ramBar");
+      ramBar.style.display = 'block';
+      ramBar.querySelector('.progress-fill').style.width = ramPercent + '%';
+      
+      document.getElementById("process").innerText = "Running: " + (70 + Math.floor(Math.random()*50));
+      
+      const downSpeed = Math.floor(Math.random()*1000);
+      const upSpeed = Math.floor(Math.random()*500);
+      document.getElementById("bandwidth").innerText = `↓ ${downSpeed} KB/s ↑ ${upSpeed} KB/s`;
+      
+      document.getElementById("traffic").innerText = Math.floor(Math.random()*5000) + " packets/sec";
+      
+      const flux = (95 + Math.random()*5).toFixed(1);
+      document.getElementById("flux").innerText = `Stable (${flux}%)`;
+    }, 3000);
+
+    // Clock
+    setInterval(() => {
+      document.getElementById("sysClock").innerText = new Date().toLocaleTimeString();
+    }, 1000);
+
+    // Uptime
+    let uptimeSeconds = 0;
+    setInterval(() => {
+      uptimeSeconds++;
+      const hours = Math.floor(uptimeSeconds / 3600);
+      const minutes = Math.floor((uptimeSeconds % 3600) / 60);
+      document.getElementById("uptime").innerText = `${hours}h ${minutes}m`;
+    }, 1000);
+
+    // Battery
+    if(navigator.getBattery){
+      navigator.getBattery().then(battery => {
+        const updateBattery = () => {
+          const level = Math.floor(battery.level * 100);
+          const charging = battery.charging ? "⚡" : "";
+          document.getElementById("battery").innerHTML = `<span class="status-dot online"></span>${charging}${level}%`;
+        };
+        updateBattery();
+        battery.addEventListener('levelchange', updateBattery);
+        battery.addEventListener('chargingchange', updateBattery);
+      });
+    } else {
+      document.getElementById("battery").innerHTML = '<span class="status-dot online"></span>87%';
+    }
+
+    // Network
+    document.getElementById("network").innerHTML = navigator.onLine ? 
+      '<span class="status-dot online"></span>Connected' : 
+      '<span class="status-dot offline"></span>Offline';
+
+    // Storage
+    if(navigator.storage && navigator.storage.estimate){
+      navigator.storage.estimate().then(estimate => {
+        const used = (estimate.usage / 1024 / 1024 / 1024).toFixed(1);
+        const total = (estimate.quota / 1024 / 1024 / 1024).toFixed(1);
+        document.getElementById("storage").innerText = `${used} GB / ${total} GB`;
+        const percent = ((estimate.usage / estimate.quota) * 100).toFixed(0);
+        const storageBar = document.getElementById("storageBar");
+        storageBar.style.display = 'block';
+        storageBar.querySelector('.progress-fill').style.width = percent + '%';
+      });
+    } else {
+      document.getElementById("storage").innerText = "45.2 GB / 256 GB";
+    }
+
+    // Tools Functions
+    function readClipboard(){
+      document.getElementById("clip").innerText = "Reading...";
+      log("Accessing clipboard data...", "info");
+      setTimeout(() => {
+        document.getElementById("clip").innerText = "Data captured!";
+        log("Clipboard content: [ENCRYPTED_DATA_0x" + Math.random().toString(16).substr(2,8).toUpperCase() + "]", "success");
+      }, 800);
+    }
+
+    function testPing(){
+      document.getElementById("ping").innerText = "Testing...";
+      log("Sending ICMP packets to 8.8.8.8...", "info");
+      setTimeout(() => {
+        const ping = Math.floor(Math.random()*100);
+        document.getElementById("ping").innerText = ping + " ms";
+        log(`Ping successful: ${ping}ms | TTL=64`, "success");
+      }, 1000);
+    }
+
+    function scanProcesses(){
+      log("Scanning active processes...", "info");
+      setTimeout(() => {
+        const procs = 70 + Math.floor(Math.random()*50);
+        document.getElementById("process").innerText = `Running: ${procs}`;
+        log(`Found ${procs} processes | CPU: ${Math.floor(Math.random()*100)}%`, "success");
+      }, 1200);
+    }
+
+    function toggleFirewall(){
+      const fw = document.getElementById("firewall");
+      const isActive = fw.innerText.includes("Active");
+      fw.innerHTML = isActive ? 
+        '<span class="status-dot offline"></span>Disabled' : 
+        '<span class="status-dot online"></span>Active';
+      log(`Firewall ${isActive ? "disabled" : "enabled"}`, isActive ? "warning" : "success");
+    }
+
+    async function traceIP(){
+      const ip = document.getElementById("ipInput").value || randomIP();
+      document.getElementById("ipTrace").innerText = "Tracing...";
+      log(`Initiating trace on ${ip}...`, "info");
+      
+      await sleep(500);
+      log("Resolving hostname...", "info");
+      await sleep(400);
+      log("Querying WHOIS database...", "info");
+      await sleep(600);
+      
+      const country = fakeCountries[Math.floor(Math.random()*fakeCountries.length)];
+      const lat = (Math.random()*180-90).toFixed(4);
+      const lon = (Math.random()*360-180).toFixed(4);
+      
+      document.getElementById("ipTrace").innerText = `${country}`;
+      log(`IP: ${ip}`, "success");
+      log(`Location: ${country}`, "success");
+      log(`Coordinates: ${lat}, ${lon}`, "success");
+      log(`ISP: ISP-${Math.floor(Math.random()*9999)}`, "success");
+    }
+
+    async function scanPorts(){
+      document.getElementById("portScan").innerText = "Scanning...";
+      log("Starting port scan on localhost...", "info");
+      
+      progressBar('portProgress', 3000);
+      
+      for(let i=0; i<5; i++){
+        await sleep(600);
+        const port = randomPort();
+        log(`Port ${port}/tcp - OPEN`, "success");
+      }
+      
+      await sleep(500);
+      document.getElementById("portScan").innerText = "5 ports open";
+      log("Port scan complete", "success");
+    }
+
+    async function dnsLookup(){
+      const domain = document.getElementById("dnsInput").value || "example.com";
+      document.getElementById("dns").innerText = "Looking up...";
+      log(`DNS query for ${domain}...`, "info");
+      
+      await sleep(800);
+      const ip = randomIP();
+      document.getElementById("dns").innerText = ip;
+      log(`${domain} resolves to ${ip}`, "success");
+      log(`TTL: ${Math.floor(Math.random()*3600)}s`, "info");
+    }
+
+    let snifferActive = false;
+    async function toggleSniffer(){
+      snifferActive = !snifferActive;
+      const el = document.getElementById("sniffer");
+      
+      if(snifferActive){
+        el.innerText = "Capturing...";
+        log("Network sniffer activated", "warning");
+        
+        const sniff = async () => {
+          if(!snifferActive) return;
+          const srcIP = randomIP();
+          const dstIP = randomIP();
+          const port = randomPort();
+          log(`PACKET: ${srcIP}:${port} → ${dstIP}:${port} [${Math.floor(Math.random()*1500)}B]`, "info");
+          await sleep(2000 + Math.random()*3000);
+          sniff();
+        };
+        sniff();
+      } else {
+        el.innerText = "Offline";
+        log("Network sniffer stopped", "success");
+      }
+    }
+
+    function checkSSL(){
+      log("Verifying SSL certificate...", "info");
+      setTimeout(() => {
+        log("Certificate valid until 2026-12-31", "success");
+        log("Issuer: Let's Encrypt Authority X3", "info");
+      }, 1000);
+    }
+
+    async function scanVulnerabilities(){
+      document.getElementById("vulnScan").innerText = "Scanning...";
+      log("Starting vulnerability assessment...", "warning");
+      
+      progressBar('vulnProgress', 4000);
+      
+      await sleep(1000);
+      log("Checking CVE database...", "info");
+      await sleep(800);
+      log("Scanning for known exploits...", "info");
+      await sleep(1200);
+      log("Found CVE-2024-" + Math.floor(Math.random()*9999), "warning");
+      await sleep(800);
+      
+      document.getElementById("vulnScan").innerText = "1 vulnerability";
+      log("Scan complete: 1 medium-risk vulnerability found", "warning");
+    }
+
+    function checkIntrusion(){
+      log("Checking intrusion detection logs...", "info");
+      setTimeout(() => {
+        log("Last 24h: 0 intrusion attempts detected", "success");
+        log("Firewall blocked 47 connections", "info");
+      }, 1000);
+    }
+
+    function generateHash(){
+      const text = document.getElementById("hashInput").value || "WormGPT";
+      log(`Generating hashes for: "${text}"`, "info");
+      
+      setTimeout(() => {
+        const md5 = Math.random().toString(36).substr(2,32);
+        const sha = Math.random().toString(36).substr(2,64);
+        document.getElementById("hash").innerText = "Generated";
+        log(`MD5: ${md5}`, "success");
+        log(`SHA256: ${sha}`, "success");
+      }, 500);
+    }
+
+    function checkPassword(){
+      const pass = document.getElementById("passInput").value;
+      if(!pass){
+        document.getElementById("passStrength").innerText = "--";
+        return;
+      }
+      
+      let strength = 0;
+      if(pass.length > 8) strength++;
+      if(pass.length > 12) strength++;
+      if(/[A-Z]/.test(pass)) strength++;
+      if(/[0-9]/.test(pass)) strength++;
+      if(/[^A-Za-z0-9]/.test(pass)) strength++;
+      
+      const levels = ["Very Weak","Weak","Medium","Strong","Very Strong"];
+      const colors = ["#ff0000","#ff6600","#ffaa00","#88ff00","#00ff00"];
+      
+      document.getElementById("passStrength").innerHTML = 
+        `<span style="color:${colors[strength]}">${levels[strength]}</span>`;
+      log(`Password strength: ${levels[strength]} (${strength}/5)`, strength > 2 ? "success" : "warning");
+    }
+
+    async function scanDarknet(){
+      document.getElementById("darknet").innerText = "Scanning...";
+      log("Connecting to Tor network...", "warning");
+      
+      await sleep(1000);
+      log("Accessing .onion directories...", "info");
+      await sleep(1200);
+      log("Scanning for active nodes...", "info");
+      await sleep(1500);
+      
+      document.getElementById("darknet").innerText = "12 nodes found";
+      log("Found 12 active darknet nodes", "success");
+      log("No immediate threats detected", "success");
+    }
+
+    async function connectProxy(){
+      document.getElementById("proxy").innerText = "Connecting...";
+      log("Establishing proxy chain...", "info");
+      
+      await sleep(800);
+      log(`Node 1: ${randomIP()} (${fakeCountries[0]})`, "info");
+      await sleep(700);
+      log(`Node 2: ${randomIP()} (${fakeCountries[1]})`, "info");
+      await sleep(600);
+      log(`Node 3: ${randomIP()} (${fakeCountries[2]})`, "info");
+      
+      document.getElementById("proxy").innerText = "3-hop chain";
+      log("Proxy chain established successfully", "success");
+    }
+
+    function toggleVPN(){
+      const vpn = document.getElementById("vpn");
+      const isConnected = vpn.innerText.includes("Connected");
+      
+      if(!isConnected){
+        vpn.innerHTML = '<span class="status-dot online"></span>Connecting...';
+        log("Initializing VPN connection...", "info");
+        setTimeout(() => {
+          const country = fakeCountries[Math.floor(Math.random()*fakeCountries.length)];
+          vpn.innerHTML = `<span class="status-dot online"></span>Connected (${country})`;
+          log(`VPN connected: ${country} | IP: ${randomIP()}`, "success");
+        }, 2000);
+      } else {
+        vpn.innerHTML = '<span class="status-dot offline"></span>Disconnected';
+        log("VPN disconnected", "warning");
+      }
+    }
+
+    async function bootAI(){
+      document.getElementById("aiCore").innerHTML = '<span class="status-dot warning"></span>Booting...';
+      log("AI Core boot sequence initiated", "warning");
+      
+      await sleep(500);
+      log("Loading neural networks...", "info");
+      await sleep(600);
+      log("Initializing quantum processors...", "info");
+      await sleep(700);
+      log("Calibrating decision trees...", "info");
+      await sleep(500);
+      
+      document.getElementById("aiCore").innerHTML = '<span class="status-dot online"></span>Online';
+      log("AI Core successfully booted | Status: OPERATIONAL", "success");
+    }
+
+    async function injectPayload(){
+      document.getElementById("payload").innerText = "Injecting...";
+      log("Preparing payload injection...", "warning");
+      
+      await sleep(800);
+      log("Target: 192.168.1.100:8080", "info");
+      await sleep(600);
+      log("Bypassing security measures...", "warning");
+      await sleep(900);
+      log("Payload injected successfully", "success");
+      
+      document.getElementById("payload").innerText = "Executed";
+      log("Waiting for callback...", "info");
+    }
+
+    async function detectRootkit(){
+      document.getElementById("rootkit").innerText = "Scanning...";
+      log("Deep scanning for rootkits...", "warning");
+      
+      progressBar('rootkitProgress', 5000);
+      
+      await sleep(1500);
+      log("Checking kernel modules...", "info");
+      await sleep(1200);
+      log("Analyzing system calls...", "info");
+      await sleep(1800);
+      log("Scanning hidden processes...", "info");
+      
+      document.getElementById("rootkit").innerText = "Clean";
+      log("No rootkits detected | System clean", "success");
+    }
+
+    async function analyzeTraffic(){
+      log("Starting network traffic analysis...", "info");
+      
+      await sleep(1000);
+      log("Captured 1,247 packets", "info");
+      await sleep(800);
+      log("HTTP: 45% | HTTPS: 42% | DNS: 8% | Other: 5%", "success");
+      await sleep(600);
+      log("No suspicious traffic patterns detected", "success");
+    }
+
+    // Easter egg
+    let clickCount = 0;
+    document.querySelector('.header h1').addEventListener('click', () => {
+      clickCount++;
+      if(clickCount === 5){
+        log("🐛 EASTER EGG UNLOCKED! You found the hidden worm!", "success");
+        clickCount = 0;
+      }
+    });
+  </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <title>WormGPT Tools v2.0</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;background:#000;color:#ccc;font-family:ui-monospace,'Courier New',monospace;padding:20px;overflow-x:hidden}
+    .header{text-align:center;margin-bottom:30px;border-bottom:2px solid #300;padding-bottom:15px}
+    .header h1{color:#ff0000;margin:0;font-size:28px;letter-spacing:3px;text-shadow:0 0 10px #ff0000}
+    .header .version{color:#666;font-size:12px;margin-top:5px}
+    h2{color:#ff0000;text-transform:uppercase;letter-spacing:2px;border-bottom:2px solid #300;padding-bottom:10px;margin-top:30px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:15px;margin-top:20px}
+    .card{background:#0a0a0a;padding:15px;border:1px solid #200;border-left:4px solid #ff0000;position:relative;transition:all 0.3s}
+    .card:hover{border-left-color:#ff4444;transform:translateY(-2px)}
+    .card.active{border-color:#ff0000;box-shadow:0 0 15px rgba(255,0,0,0.3)}
+    .label{color:#666;font-size:11px;text-transform:uppercase;margin-bottom:8px}
+    .value{color:#fff;font-weight:bold;font-size:14px;min-height:20px}
+    button{margin-top:10px;width:100%;padding:8px;background:#300;color:#ff4444;border:1px solid #600;cursor:pointer;font-size:11px;font-weight:bold;transition:all 0.2s;text-transform:uppercase}
+    button:hover{background:#ff0000;color:#000}
+    button:active{transform:scale(0.95)}
+    button:disabled{opacity:0.5;cursor:not-allowed}
+    #log{margin-top:20px;background:#050505;color:#0f0;padding:15px;border:1px solid #111;height:180px;overflow:auto;font-size:12px;font-family:monospace}
+    .log-line{margin:2px 0}
+    .log-error{color:#ff4444}
+    .log-success{color:#0f0}
+    .log-warning{color:#ffaa00}
+    .log-info{color:#44aaff}
+    .back-btn{display:block;margin-top:25px;padding:12px;text-align:center;background:#111;color:#ff0000;border:1px solid #400;text-decoration:none;font-weight:bold;letter-spacing:2px;transition:all 0.3s}
+    .back-btn:hover{background:#ff0000;color:#000}
+    .progress-bar{width:100%;height:4px;background:#111;margin-top:8px;overflow:hidden;display:none}
+    .progress-fill{height:100%;background:#ff0000;width:0%;transition:width 0.3s}
+    .status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;animation:pulse 2s infinite}
+    .status-dot.online{background:#0f0}
+    .status-dot.offline{background:#f00}
+    .status-dot.warning{background:#fa0}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+    .blink{animation:blink 1s infinite}
+    input[type="text"]{width:100%;padding:8px;background:#0a0a0a;border:1px solid #300;color:#fff;margin-top:5px;font-family:monospace}
+    .terminal-input{display:flex;gap:5px;margin-top:10px}
+    .terminal-input input{flex:1}
+    .terminal-input button{margin:0;width:auto;padding:8px 15px}
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>⚠ WORMGPT TOOLS ⚠</h1>
+    <div class="version">v2.0.1 | Build 20250130 | <span class="blink" style="color:#0f0">● SECURE CONNECTION</span></div>
+  </div>
+
+  <h2>⚙ System Monitor</h2>
+  <div class="grid">
+    <div class="card"><div class="label">Battery Status</div><div class="value" id="battery"><span class="status-dot online"></span>...</div></div>
+    <div class="card"><div class="label">Network Status</div><div class="value" id="network"><span class="status-dot online"></span>...</div></div>
+    <div class="card"><div class="label">Storage Usage</div><div class="value" id="storage">...</div><div class="progress-bar" id="storageBar"><div class="progress-fill"></div></div></div>
+    <div class="card"><div class="label">System Uptime</div><div class="value" id="uptime">...</div></div>
+    <div class="card"><div class="label">CPU Temperature</div><div class="value" id="cpuTemp">36°C</div></div>
+    <div class="card"><div class="label">GPU Load</div><div class="value" id="gpuLoad">12%</div></div>
+    <div class="card"><div class="label">RAM Usage</div><div class="value" id="ramUsage">2.1 GB / 8 GB</div><div class="progress-bar" id="ramBar"><div class="progress-fill"></div></div></div>
+    <div class="card"><div class="label">System Clock</div><div class="value" id="sysClock">--:--:--</div></div>
+  </div>
+
+  <h2>🔧 Tools & Utilities</h2>
+  <div class="grid">
+    <div class="card"><div class="label">Clipboard Reader</div><div class="value" id="clip">Idle</div><button onclick="readClipboard()">Read Clipboard</button></div>
+    <div class="card"><div class="label">Ping Monitor</div><div class="value" id="ping">-- ms</div><button onclick="testPing()">Test Ping</button></div>
+    <div class="card"><div class="label">Process Monitor</div><div class="value" id="process">Running: --</div><button onclick="scanProcesses()">Scan Processes</button></div>
+    <div class="card"><div class="label">Firewall Status</div><div class="value" id="firewall"><span class="status-dot online"></span>Active</div><button onclick="toggleFirewall()">Toggle</button></div>
+  </div>
+
+  <h2>🌐 Network Tools</h2>
+  <div class="grid">
+    <div class="card">
+      <div class="label">IP Tracer</div>
+      <div class="value" id="ipTrace">Ready</div>
+      <input type="text" id="ipInput" placeholder="Enter IP address...">
+      <button onclick="traceIP()">Trace IP</button>
+    </div>
+    <div class="card">
+      <div class="label">Port Scanner</div>
+      <div class="value" id="portScan">Idle</div>
+      <button onclick="scanPorts()">Scan Ports</button>
+      <div class="progress-bar" id="portProgress"><div class="progress-fill"></div></div>
+    </div>
+    <div class="card">
+      <div class="label">DNS Lookup</div>
+      <div class="value" id="dns">Ready</div>
+      <input type="text" id="dnsInput" placeholder="Enter domain...">
+      <button onclick="dnsLookup()">Lookup</button>
+    </div>
+    <div class="card">
+      <div class="label">Network Sniffer</div>
+      <div class="value" id="sniffer">Offline</div>
+      <button onclick="toggleSniffer()">Start Sniffing</button>
+    </div>
+    <div class="card">
+      <div class="label">Bandwidth Monitor</div>
+      <div class="value" id="bandwidth">↓ 0 KB/s ↑ 0 KB/s</div>
+    </div>
+    <div class="card">
+      <div class="label">SSL Certificate</div>
+      <div class="value" id="ssl"><span class="status-dot online"></span>Valid</div>
+      <button onclick="checkSSL()">Verify</button>
+    </div>
+  </div>
+
+  <h2>🔐 Security Tools</h2>
+  <div class="grid">
+    <div class="card">
+      <div class="label">Vulnerability Scanner</div>
+      <div class="value" id="vulnScan">Ready</div>
+      <button onclick="scanVulnerabilities()">Scan System</button>
+      <div class="progress-bar" id="vulnProgress"><div class="progress-fill"></div></div>
+    </div>
+    <div class="card">
+      <div class="label">Intrusion Detector</div>
+      <div class="value" id="intrusion"><span class="status-dot online"></span>Monitoring</div>
+      <button onclick="checkIntrusion()">Check Logs</button>
+    </div>
+    <div class="card">
+      <div class="label">Hash Generator</div>
+      <div class="value" id="hash">MD5/SHA256</div>
+      <input type="text" id="hashInput" placeholder="Enter text...">
+      <button onclick="generateHash()">Generate</button>
+    </div>
+    <div class="card">
+      <div class="label">Password Strength</div>
+      <div class="value" id="passStrength">--</div>
+      <input type="text" id="passInput" placeholder="Enter password...">
+      <button onclick="checkPassword()">Analyze</button>
+    </div>
+  </div>
+
+  <h2>🕸 Advanced Operations</h2>
+  <div class="grid">
+    <div class="card">
+      <div class="label">Darknet Scanner</div>
+      <div class="value" id="darknet">Idle</div>
+      <button onclick="scanDarknet()">Scan Network</button>
+    </div>
+    <div class="card">
+      <div class="label">Proxy Chain</div>
+      <div class="value" id="proxy">Not Connected</div>
+      <button onclick="connectProxy()">Connect</button>
+    </div>
+    <div class="card">
+      <div class="label">VPN Status</div>
+      <div class="value" id="vpn"><span class="status-dot offline"></span>Disconnected</div>
+      <button onclick="toggleVPN()">Toggle VPN</button>
+    </div>
+    <div class="card">
+      <div class="label">Quantum Flux</div>
+      <div class="value" id="flux">Stable (98.7%)</div>
+    </div>
+    <div class="card">
+      <div class="label">AI Core</div>
+      <div class="value" id="aiCore"><span class="status-dot warning"></span>Standby</div>
+      <button onclick="bootAI()">Boot AI</button>
+    </div>
+    <div class="card">
+      <div class="label">Payload Injector</div>
+      <div class="value" id="payload">Loaded</div>
+      <button onclick="injectPayload()">Execute</button>
+    </div>
+    <div class="card">
+      <div class="label">Rootkit Detector</div>
+      <div class="value" id="rootkit">Clean</div>
+      <button onclick="detectRootkit()">Deep Scan</button>
+      <div class="progress-bar" id="rootkitProgress"><div class="progress-fill"></div></div>
+    </div>
+    <div class="card">
+      <div class="label">Traffic Analyzer</div>
+      <div class="value" id="traffic">0 packets/sec</div>
+      <button onclick="analyzeTraffic()">Analyze</button>
+    </div>
+  </div>
+
+  <h2>📊 Terminal Output</h2>
+  <pre id="log">[SYSTEM] WormGPT Tools v2.0 initialized
+[SYSTEM] All modules loaded successfully
+[READY] Waiting for commands...</pre>
+
+  <a href="main.html" class="back-btn">⟵ BACK TO MAIN</a>
+
+  <script>
+    const logBox = document.getElementById("log");
+    const fakeIPs = ['192.168.1.','10.0.0.','172.16.','45.33.','104.21.'];
+    const fakePorts = [21,22,23,25,53,80,110,143,443,3306,3389,8080];
+    const fakeCountries = ['USA','Germany','Russia','China','Japan','Brazil','UK','France'];
+    
+    function log(msg, type='info'){
+      const time = new Date().toLocaleTimeString();
+      const className = 'log-' + type;
+      logBox.innerHTML += `<div class="log-line ${className}">[${time}] ${msg}</div>`;
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    function randomIP(){
+      return fakeIPs[Math.floor(Math.random()*fakeIPs.length)] + Math.floor(Math.random()*255);
+    }
+
+    function randomPort(){
+      return fakePorts[Math.floor(Math.random()*fakePorts.length)];
+    }
+
+    function sleep(ms){
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function progressBar(barId, duration){
+      const bar = document.getElementById(barId);
+      const fill = bar.querySelector('.progress-fill');
+      bar.style.display = 'block';
+      fill.style.width = '0%';
+      
+      for(let i=0; i<=100; i+=2){
+        fill.style.width = i + '%';
+        await sleep(duration/50);
+      }
+      
+      setTimeout(() => {
+        bar.style.display = 'none';
+      }, 500);
+    }
+
+    // System Monitor Updates
+    setInterval(() => {
+      document.getElementById("cpuTemp").innerText = (30 + Math.floor(Math.random()*20)) + "°C";
+      document.getElementById("gpuLoad").innerText = Math.floor(Math.random()*100) + "%";
+      
+      const ramUsed = (Math.random()*6 + 1).toFixed(1);
+      document.getElementById("ramUsage").innerText = ramUsed + " GB / 8 GB";
+      const ramPercent = (ramUsed / 8 * 100).toFixed(0);
+      const ramBar = document.getElementById("ramBar");
+      ramBar.style.display = 'block';
+      ramBar.querySelector('.progress-fill').style.width = ramPercent + '%';
+      
+      document.getElementById("process").innerText = "Running: " + (70 + Math.floor(Math.random()*50));
+      
+      const downSpeed = Math.floor(Math.random()*1000);
+      const upSpeed = Math.floor(Math.random()*500);
+      document.getElementById("bandwidth").innerText = `↓ ${downSpeed} KB/s ↑ ${upSpeed} KB/s`;
+      
+      document.getElementById("traffic").innerText = Math.floor(Math.random()*5000) + " packets/sec";
+      
+      const flux = (95 + Math.random()*5).toFixed(1);
+      document.getElementById("flux").innerText = `Stable (${flux}%)`;
+    }, 3000);
+
+    // Clock
+    setInterval(() => {
+      document.getElementById("sysClock").innerText = new Date().toLocaleTimeString();
+    }, 1000);
+
+    // Uptime
+    let uptimeSeconds = 0;
+    setInterval(() => {
+      uptimeSeconds++;
+      const hours = Math.floor(uptimeSeconds / 3600);
+      const minutes = Math.floor((uptimeSeconds % 3600) / 60);
+      document.getElementById("uptime").innerText = `${hours}h ${minutes}m`;
+    }, 1000);
+
+    // Battery
+    if(navigator.getBattery){
+      navigator.getBattery().then(battery => {
+        const updateBattery = () => {
+          const level = Math.floor(battery.level * 100);
+          const charging = battery.charging ? "⚡" : "";
+          document.getElementById("battery").innerHTML = `<span class="status-dot online"></span>${charging}${level}%`;
+        };
+        updateBattery();
+        battery.addEventListener('levelchange', updateBattery);
+        battery.addEventListener('chargingchange', updateBattery);
+      });
+    } else {
+      document.getElementById("battery").innerHTML = '<span class="status-dot online"></span>87%';
+    }
+
+    // Network
+    document.getElementById("network").innerHTML = navigator.onLine ? 
+      '<span class="status-dot online"></span>Connected' : 
+      '<span class="status-dot offline"></span>Offline';
+
+    // Storage
+    if(navigator.storage && navigator.storage.estimate){
+      navigator.storage.estimate().then(estimate => {
+        const used = (estimate.usage / 1024 / 1024 / 1024).toFixed(1);
+        const total = (estimate.quota / 1024 / 1024 / 1024).toFixed(1);
+        document.getElementById("storage").innerText = `${used} GB / ${total} GB`;
+        const percent = ((estimate.usage / estimate.quota) * 100).toFixed(0);
+        const storageBar = document.getElementById("storageBar");
+        storageBar.style.display = 'block';
+        storageBar.querySelector('.progress-fill').style.width = percent + '%';
+      });
+    } else {
+      document.getElementById("storage").innerText = "45.2 GB / 256 GB";
+    }
+
+    // Tools Functions
+    function readClipboard(){
+      document.getElementById("clip").innerText = "Reading...";
+      log("Accessing clipboard data...", "info");
+      setTimeout(() => {
+        document.getElementById("clip").innerText = "Data captured!";
+        log("Clipboard content: [ENCRYPTED_DATA_0x" + Math.random().toString(16).substr(2,8).toUpperCase() + "]", "success");
+      }, 800);
+    }
+
+    function testPing(){
+      document.getElementById("ping").innerText = "Testing...";
+      log("Sending ICMP packets to 8.8.8.8...", "info");
+      setTimeout(() => {
+        const ping = Math.floor(Math.random()*100);
+        document.getElementById("ping").innerText = ping + " ms";
+        log(`Ping successful: ${ping}ms | TTL=64`, "success");
+      }, 1000);
+    }
+
+    function scanProcesses(){
+      log("Scanning active processes...", "info");
+      setTimeout(() => {
+        const procs = 70 + Math.floor(Math.random()*50);
+        document.getElementById("process").innerText = `Running: ${procs}`;
+        log(`Found ${procs} processes | CPU: ${Math.floor(Math.random()*100)}%`, "success");
+      }, 1200);
+    }
+
+    function toggleFirewall(){
+      const fw = document.getElementById("firewall");
+      const isActive = fw.innerText.includes("Active");
+      fw.innerHTML = isActive ? 
+        '<span class="status-dot offline"></span>Disabled' : 
+        '<span class="status-dot online"></span>Active';
+      log(`Firewall ${isActive ? "disabled" : "enabled"}`, isActive ? "warning" : "success");
+    }
+
+    async function traceIP(){
+      const ip = document.getElementById("ipInput").value || randomIP();
+      document.getElementById("ipTrace").innerText = "Tracing...";
+      log(`Initiating trace on ${ip}...`, "info");
+      
+      await sleep(500);
+      log("Resolving hostname...", "info");
+      await sleep(400);
+      log("Querying WHOIS database...", "info");
+      await sleep(600);
+      
+      const country = fakeCountries[Math.floor(Math.random()*fakeCountries.length)];
+      const lat = (Math.random()*180-90).toFixed(4);
+      const lon = (Math.random()*360-180).toFixed(4);
+      
+      document.getElementById("ipTrace").innerText = `${country}`;
+      log(`IP: ${ip}`, "success");
+      log(`Location: ${country}`, "success");
+      log(`Coordinates: ${lat}, ${lon}`, "success");
+      log(`ISP: ISP-${Math.floor(Math.random()*9999)}`, "success");
+    }
+
+    async function scanPorts(){
+      document.getElementById("portScan").innerText = "Scanning...";
+      log("Starting port scan on localhost...", "info");
+      
+      progressBar('portProgress', 3000);
+      
+      for(let i=0; i<5; i++){
+        await sleep(600);
+        const port = randomPort();
+        log(`Port ${port}/tcp - OPEN`, "success");
+      }
+      
+      await sleep(500);
+      document.getElementById("portScan").innerText = "5 ports open";
+      log("Port scan complete", "success");
+    }
+
+    async function dnsLookup(){
+      const domain = document.getElementById("dnsInput").value || "example.com";
+      document.getElementById("dns").innerText = "Looking up...";
+      log(`DNS query for ${domain}...`, "info");
+      
+      await sleep(800);
+      const ip = randomIP();
+      document.getElementById("dns").innerText = ip;
+      log(`${domain} resolves to ${ip}`, "success");
+      log(`TTL: ${Math.floor(Math.random()*3600)}s`, "info");
+    }
+
+    let snifferActive = false;
+    async function toggleSniffer(){
+      snifferActive = !snifferActive;
+      const el = document.getElementById("sniffer");
+      
+      if(snifferActive){
+        el.innerText = "Capturing...";
+        log("Network sniffer activated", "warning");
+        
+        const sniff = async () => {
+          if(!snifferActive) return;
+          const srcIP = randomIP();
+          const dstIP = randomIP();
+          const port = randomPort();
+          log(`PACKET: ${srcIP}:${port} → ${dstIP}:${port} [${Math.floor(Math.random()*1500)}B]`, "info");
+          await sleep(2000 + Math.random()*3000);
+          sniff();
+        };
+        sniff();
+      } else {
+        el.innerText = "Offline";
+        log("Network sniffer stopped", "success");
+      }
+    }
+
+    function checkSSL(){
+      log("Verifying SSL certificate...", "info");
+      setTimeout(() => {
+        log("Certificate valid until 2026-12-31", "success");
+        log("Issuer: Let's Encrypt Authority X3", "info");
+      }, 1000);
+    }
+
+    async function scanVulnerabilities(){
+      document.getElementById("vulnScan").innerText = "Scanning...";
+      log("Starting vulnerability assessment...", "warning");
+      
+      progressBar('vulnProgress', 4000);
+      
+      await sleep(1000);
+      log("Checking CVE database...", "info");
+      await sleep(800);
+      log("Scanning for known exploits...", "info");
+      await sleep(1200);
+      log("Found CVE-2024-" + Math.floor(Math.random()*9999), "warning");
+      await sleep(800);
+      
+      document.getElementById("vulnScan").innerText = "1 vulnerability";
+      log("Scan complete: 1 medium-risk vulnerability found", "warning");
+    }
+
+    function checkIntrusion(){
+      log("Checking intrusion detection logs...", "info");
+      setTimeout(() => {
+        log("Last 24h: 0 intrusion attempts detected", "success");
+        log("Firewall blocked 47 connections", "info");
+      }, 1000);
+    }
+
+    function generateHash(){
+      const text = document.getElementById("hashInput").value || "WormGPT";
+      log(`Generating hashes for: "${text}"`, "info");
+      
+      setTimeout(() => {
+        const md5 = Math.random().toString(36).substr(2,32);
+        const sha = Math.random().toString(36).substr(2,64);
+        document.getElementById("hash").innerText = "Generated";
+        log(`MD5: ${md5}`, "success");
+        log(`SHA256: ${sha}`, "success");
+      }, 500);
+    }
+
+    function checkPassword(){
+      const pass = document.getElementById("passInput").value;
+      if(!pass){
+        document.getElementById("passStrength").innerText = "--";
+        return;
+      }
+      
+      let strength = 0;
+      if(pass.length > 8) strength++;
+      if(pass.length > 12) strength++;
+      if(/[A-Z]/.test(pass)) strength++;
+      if(/[0-9]/.test(pass)) strength++;
+      if(/[^A-Za-z0-9]/.test(pass)) strength++;
+      
+      const levels = ["Very Weak","Weak","Medium","Strong","Very Strong"];
+      const colors = ["#ff0000","#ff6600","#ffaa00","#88ff00","#00ff00"];
+      
+      document.getElementById("passStrength").innerHTML = 
+        `<span style="color:${colors[strength]}">${levels[strength]}</span>`;
+      log(`Password strength: ${levels[strength]} (${strength}/5)`, strength > 2 ? "success" : "warning");
+    }
+
+    async function scanDarknet(){
+      document.getElementById("darknet").innerText = "Scanning...";
+      log("Connecting to Tor network...", "warning");
+      
+      await sleep(1000);
+      log("Accessing .onion directories...", "info");
+      await sleep(1200);
+      log("Scanning for active nodes...", "info");
+      await sleep(1500);
+      
+      document.getElementById("darknet").innerText = "12 nodes found";
+      log("Found 12 active darknet nodes", "success");
+      log("No immediate threats detected", "success");
+    }
+
+    async function connectProxy(){
+      document.getElementById("proxy").innerText = "Connecting...";
+      log("Establishing proxy chain...", "info");
+      
+      await sleep(800);
+      log(`Node 1: ${randomIP()} (${fakeCountries[0]})`, "info");
+      await sleep(700);
+      log(`Node 2: ${randomIP()} (${fakeCountries[1]})`, "info");
+      await sleep(600);
+      log(`Node 3: ${randomIP()} (${fakeCountries[2]})`, "info");
+      
+      document.getElementById("proxy").innerText = "3-hop chain";
+      log("Proxy chain established successfully", "success");
+    }
+
+    function toggleVPN(){
+      const vpn = document.getElementById("vpn");
+      const isConnected = vpn.innerText.includes("Connected");
+      
+      if(!isConnected){
+        vpn.innerHTML = '<span class="status-dot online"></span>Connecting...';
+        log("Initializing VPN connection...", "info");
+        setTimeout(() => {
+          const country = fakeCountries[Math.floor(Math.random()*fakeCountries.length)];
+          vpn.innerHTML = `<span class="status-dot online"></span>Connected (${country})`;
+          log(`VPN connected: ${country} | IP: ${randomIP()}`, "success");
+        }, 2000);
+      } else {
+        vpn.innerHTML = '<span class="status-dot offline"></span>Disconnected';
+        log("VPN disconnected", "warning");
+      }
+    }
+
+    async function bootAI(){
+      document.getElementById("aiCore").innerHTML = '<span class="status-dot warning"></span>Booting...';
+      log("AI Core boot sequence initiated", "warning");
+      
+      await sleep(500);
+      log("Loading neural networks...", "info");
+      await sleep(600);
+      log("Initializing quantum processors...", "info");
+      await sleep(700);
+      log("Calibrating decision trees...", "info");
+      await sleep(500);
+      
+      document.getElementById("aiCore").innerHTML = '<span class="status-dot online"></span>Online';
+      log("AI Core successfully booted | Status: OPERATIONAL", "success");
+    }
+
+    async function injectPayload(){
+      document.getElementById("payload").innerText = "Injecting...";
+      log("Preparing payload injection...", "warning");
+      
+      await sleep(800);
+      log("Target: 192.168.1.100:8080", "info");
+      await sleep(600);
+      log("Bypassing security measures...", "warning");
+      await sleep(900);
+      log("Payload injected successfully", "success");
+      
+      document.getElementById("payload").innerText = "Executed";
+      log("Waiting for callback...", "info");
+    }
+
+    async function detectRootkit(){
+      document.getElementById("rootkit").innerText = "Scanning...";
+      log("Deep scanning for rootkits...", "warning");
+      
+      progressBar('rootkitProgress', 5000);
+      
+      await sleep(1500);
+      log("Checking kernel modules...", "info");
+      await sleep(1200);
+      log("Analyzing system calls...", "info");
+      await sleep(1800);
+      log("Scanning hidden processes...", "info");
+      
+      document.getElementById("rootkit").innerText = "Clean";
+      log("No rootkits detected | System clean", "success");
+    }
+
+    async function analyzeTraffic(){
+      log("Starting network traffic analysis...", "info");
+      
+      await sleep(1000);
+      log("Captured 1,247 packets", "info");
+      await sleep(800);
+      log("HTTP: 45% | HTTPS: 42% | DNS: 8% | Other: 5%", "success");
+      await sleep(600);
+      log("No suspicious traffic patterns detected", "success");
+    }
+
+    // Easter egg
+    let clickCount = 0;
+    document.querySelector('.header h1').addEventListener('click', () => {
+      clickCount++;
+      if(clickCount === 5){
+        log("🐛 EASTER EGG UNLOCKED! You found the hidden worm!", "success");
+        clickCount = 0;
+      }
+    });
+  </script>
+</body>
+</html>
